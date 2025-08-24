@@ -1,6 +1,23 @@
 const User = require('../models/userModel');
 exports.loginUser = ((req,res,next)=>{
- 
+  console.log(req.body)
+  let user_email = req.body.email;
+  let password = req.body.password
+  User.findOne({email:user_email , password:password})
+  .then((user)=>{
+    res.status(200).json({
+      message:'Logged in successfully',
+      body:user,
+      is_user:true
+    })
+  })
+  .catch(()=>{
+    res.status(500).json({
+      message:'User Not Registered',
+      body:[],
+      is_user:false
+    })
+  })
 })
 
 exports.RegisterUser = (req, res, next) => {
@@ -21,7 +38,7 @@ exports.RegisterUser = (req, res, next) => {
       });
     })
     .catch(() => {
-      res.status(404).send({
+      res.status(500).send({
         success: true,
         message: "User registered Failed",
         data: user,
