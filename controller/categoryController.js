@@ -17,32 +17,28 @@ exports.createCategory = async (req, res, next) => {
   }
 };
 
-exports.updateCategory = (req, res, next) => {
-  console.log(req.body);
-  let id = req.body.id;
-  let category_name = req.body.category_name;
-  Category.update(
-    { category_name: category_name },
-    { where: { id: id } }
-  )
-    .then((data) => {
-      res.status(200).json({
-        message: "Category Updated Succesfully",
-        data: data,
-      });
-    })
-    .catch(() => {
-      res.status(200).json({
-        message: "Failed Updating Category",
-        data: [],
-      });
+exports.updateCategory = async (req, res, next) => {
+  try {
+    let id = req.body.id;
+    let category_name = req.body.category_name;
+    let result = await Category.update({ category_name: category_name }, { where: { id: id } });
+    res.status(200).json({
+      message: "Category Updated Succesfully",
+      data: result,
     });
+  } catch (err) {
+    console.log("Err Updating Category", err);
+    res.status(500).json({
+      message: "Failed Updating Category",
+      data: [],
+    });
+  }
 };
 
-exports.deleteCategory = (req, res, next) => {
+exports.deleteCategory = async (req, res, next) => {
   try {
     let category_id = req.params.category_id;
-    let details = Category.destroy({ where: { id: category_id } });
+    let details = await Category.destroy({ where: { id: category_id } });
     res.status(200).json({
       message: "Category Deleted Successfully",
       data: details,
@@ -59,32 +55,38 @@ exports.deleteCategory = (req, res, next) => {
 exports.getCategoryList = async (req, res, next) => {
   try {
     let details = await Category.findAll();
-    res.status(200).json({
+     res.status(200).json({
       message: "Succesfully Fetching Category List",
       data: details,
     });
   } catch (err) {
     console.log("err", err);
-    res.status(200).json({
+    res.status(500).json({
       message: "Failed Fetching Category List",
       data: [],
     });
   }
 };
 
-exports.getCategoryById = (req, res, next) => {
-  let category_id = req.params.category_id;
-  Category.findOne({ category_id: category_id })
-    .then((data) => {
-      res.status(200).json({
+exports.getCategoryById =async (req, res, next) => {
+  try{
+     let category_id = req.params.category_id;
+     console.log("category_id",category_id)
+     let result = await Category.findAll({
+      where : { 
+        id: category_id 
+      } 
+      })
+     console.log("result",result)
+     res.status(200).json({
         message: "Category Fetched Succesfully",
-        data: data,
+        data: result,
       });
-    })
-    .catch(() => {
-      res.status(200).json({
+  }catch(err){
+    console.log("Error getting category by id",err)
+      res.status(500).json({
         message: "Failed Fetching Category",
         data: [],
       });
-    });
+  }
 };
