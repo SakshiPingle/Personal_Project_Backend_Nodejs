@@ -19,8 +19,6 @@ const User = require('./models/userModel');
 const Product = require('./models/productModel');
 const Category = require('./models/categoryModel');
 // defining relationships
-Product.belongsTo(User, {constraints: true, onDelete: 'CASCADE'});
-User.hasMany(Product);
 Product.belongsTo(Category, {constraints: true, onDelete: 'CASCADE'});
 Category.hasMany(Product);
 // importing the routing files

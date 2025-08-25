@@ -9,13 +9,7 @@ const category =  sequelize.define('category',{
     category_name:{
         type : Sequelize.STRING,
         allowNull : false
-    },
-    category_id:{
-        type : Sequelize.STRING,
-        allowNull : false
-    },
-    
-
+    }
 })
 
 module.exports=category;
