@@ -1,5 +1,6 @@
 const Product = require("../models/productModel");
 const Category = require("../models/categoryModel");
+const { Op } = require('sequelize');
 exports.createProduct = async (req, res, next) => {
   try {
     console.log("product ", req.body);
@@ -69,18 +70,51 @@ exports.deleteProduct = async (req, res, next) => {
 
 exports.getProductList = async (req, res, next) => {
   try {
-    let products = await Product.findAll({
-      include: [
-        {
-          model: Category,
-          attributes: ["id", "category_name"], // only these columns
-        },
+    let limit = +req.params.page_size;
+    let current_page = +req.params.current_page;
+    // console.log("page",page_size)
+    console.log("curre",current_page)
+    let offset = (current_page - 1) * limit;
+
+    let sort_type = req.params.sort_type?.toUpperCase() || 'ASC';
+    let search = req.query.search?.trim() || ''; 
+    console.log("search",search)
+     const { count, rows } = await Product.findAndCountAll({
+      limit: limit,
+      offset: offset,
+      include:
+       [
+        { 
+          model: Category, 
+          attributes: ['id', 'category_name'],
+        } 
       ],
+       where: search
+        ? {
+            [Op.or]: [
+              { product_name: { [Op.iLike]: `%${search}%` } },
+              { '$category.category_name$': { [Op.iLike]: `%${search}%` } } // 👈 search in joined table
+            ]
+          }
+        : {},
+      order: [['product_price', sort_type]]
     });
+    
     res.status(200).json({
-      message: "Product List Fetched Successfully",
-      data: products,
+      message: "Product list fetched successfully",
+      data: rows,
+      totalItems: count,
+      totalPages: Math.ceil(count / limit),
+      pagination: {  
+        currentPage: current_page,
+        pageSize: limit
+      }
     });
+
+    // res.status(200).json({
+    //   message: "Product List Fetched Successfully",
+    //   data: products,
+    // });
   } catch (err) {
     console.log("err", err);
     res.status(500).json({
