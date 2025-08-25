@@ -1,5 +1,6 @@
 const Product = require("../models/productModel");
 const Category = require("../models/categoryModel");
+const XLSX = require("xlsx");
 const { Op } = require('sequelize');
 exports.createProduct = async (req, res, next) => {
   try {
@@ -144,3 +145,31 @@ exports.getProductById = async (req, res, next) => {
     });
   }
 }
+
+exports.uploadExcel = async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ message: "No file uploaded" });
+     console.log("req.file",req.file?true:false)
+    // Read Excel file
+    const workbook = XLSX.readFile(req.file.path);
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const data = XLSX.utils.sheet_to_json(sheet); // [{product_name, product_price, categoryId}, ...]
+
+    // Insert in batches to handle large files
+    const batchSize = 1000;
+    for (let i = 0; i < data.length; i += batchSize) {
+      const batch = data.slice(i, i + batchSize).map(row => ({
+        product_name: row.product_name,
+        product_description: row.product_description,
+        product_price: row.product_price,
+        categoryId: row.categoryId
+      }));
+      await Product.bulkCreate(batch, { ignoreDuplicates: true });
+    }
+
+    res.json({ message: "Upload successful", totalRecords: data.length });
+  } catch (err) {
+    console.error("Upload error:", err);
+    res.status(500).json({ message: "Upload failed" });
+  }
+};
