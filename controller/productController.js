@@ -2,6 +2,7 @@ const Product = require("../models/productModel");
 const Category = require("../models/categoryModel");
 const XLSX = require("xlsx");
 const { Op } = require('sequelize');
+const ExcelJS = require('exceljs');
 exports.createProduct = async (req, res, next) => {
   try {
     console.log("product ", req.body);
@@ -146,7 +147,7 @@ exports.getProductById = async (req, res, next) => {
   }
 }
 
-exports.uploadExcel = async (req, res) => {
+exports.uploadExcel = async (req, res,next) => {
   try {
     if (!req.file) return res.status(400).json({ message: "No file uploaded" });
      console.log("req.file",req.file?true:false)
@@ -173,3 +174,49 @@ exports.uploadExcel = async (req, res) => {
     res.status(500).json({ message: "Upload failed" });
   }
 };
+
+exports.getProductReport = async(req,res,next)=>{
+ try {
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      'attachment; filename="products-report.xlsx"'
+    );
+
+    const workbook = new ExcelJS.stream.xlsx.WorkbookWriter({ stream: res });
+    const worksheet = workbook.addWorksheet("Products");
+
+    worksheet.columns = [
+      { header: "ID", key: "id", width: 10 },
+      { header: "Product Name", key: "product_name", width: 25 },
+      { header: "Category", key: "category", width: 20 },
+      { header: "Description", key: "product_description", width: 40 },
+      { header: "Price", key: "product_price", width: 15 },
+    ];
+
+    const products = await Product.findAll({
+      include: [{ model: Category, as: "category" }],
+      raw: true,
+      nest: true,
+    });
+
+    for (const p of products) {
+      worksheet.addRow({
+        id: p.id,
+        product_name: p.product_name,
+        category: p.category?.category_name || "",
+        product_description: p.product_description,
+        product_price: p.product_price,
+      }).commit();
+    }
+
+    await worksheet.commit();
+    await workbook.commit(); // ✅ MUST flush before response ends
+  } catch (err) {
+    console.error("Excel generation error:", err);
+    res.status(500).send("Error generating Excel report");
+  }
+}
